@@ -1,4 +1,4 @@
-package commands
+package main
 
 type Command interface {
 	Execute()
