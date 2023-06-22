@@ -1,6 +1,8 @@
 package config
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestCloudProvider_MarshalJSON(t *testing.T) {
 	testParameter := map[CloudProvider]string{

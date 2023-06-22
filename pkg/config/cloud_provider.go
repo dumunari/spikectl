@@ -25,11 +25,11 @@ func (c *CloudProvider) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.String())
 }
 func (c *CloudProvider) UnmarshalJSON(data []byte) (err error) {
-	var cloudprovider string
-	if err := json.Unmarshal(data, &cloudprovider); err != nil {
+	var cloudProvider string
+	if err := json.Unmarshal(data, &cloudProvider); err != nil {
 		return err
 	}
-	if *c, err = ParseCloudProvider(cloudprovider); err != nil {
+	if *c, err = ParseCloudProvider(cloudProvider); err != nil {
 		return err
 	}
 	return nil
@@ -43,12 +43,4 @@ func ParseCloudProvider(s string) (CloudProvider, error) {
 		return AZURE, nil
 	}
 	return CloudProvider(0), fmt.Errorf("%q is not a supported cloud platform", s)
-}
-
-type IDPConfig struct {
-	CloudProvider string `json:"cloud_provider"`
-}
-
-type SpikeConfig struct {
-	IDP IDPConfig `json:"idp"`
 }
