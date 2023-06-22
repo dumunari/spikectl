@@ -13,14 +13,20 @@ func NewAzureCloudProvider() *AzureCloudProvider {
 	return &AzureCloudProvider{}
 }
 
-func (p *AzureCloudProvider) CreateKubernetesCluster() {
-}
+func (p *AzureCloudProvider) CreateKubernetesCluster() {}
 
 type AwsCloudProvider struct {
 }
 
-func CreateCloudProvider(cfg config.SpikeConfig) CloudProvider {
+func (p *AwsCloudProvider) CreateKubernetesCluster() {}
+
+func NewAwsCloudProvider() *AwsCloudProvider {
+	return &AwsCloudProvider{}
+}
+
+func CreateCloudProvider(cfg *config.SpikeConfig) CloudProvider {
 	if cfg.IDP.CloudProvider == config.AZURE {
 		return NewAzureCloudProvider()
 	}
+	return NewAwsCloudProvider()
 }
