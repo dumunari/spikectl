@@ -1,13 +1,13 @@
-package cloud
+package aws
 
 type AwsCloudProvider struct {
 }
 
-func (p *AwsCloudProvider) CreateResourceGroup() {
+func (a AwsCloudProvider) InstantiateKubernetesCluster() error {
+	//TODO implement me
 	panic("implement me")
+	return nil
 }
-
-func (p *AwsCloudProvider) CreateKubernetesCluster() {}
 
 func NewAwsCloudProvider() *AwsCloudProvider {
 	return &AwsCloudProvider{}

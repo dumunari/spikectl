@@ -1,15 +1,18 @@
 package cloud
 
-import "spikectl/internal/config"
+import (
+	"spikectl/internal/cloud/aws"
+	"spikectl/internal/cloud/azure"
+	"spikectl/internal/config"
+)
 
 type CloudProvider interface {
-	CreateResourceGroup()
-	CreateKubernetesCluster()
+	InstantiateKubernetesCluster() error
 }
 
 func NewCloudProvider(cfg *config.SpikeConfig) CloudProvider {
 	if cfg.IDP.CloudProvider == config.AZURE {
-		return NewAzureCloudProvider(cfg)
+		return azure.NewAzureCloudProvider(cfg)
 	}
-	return NewAwsCloudProvider()
+	return aws.NewAwsCloudProvider()
 }
