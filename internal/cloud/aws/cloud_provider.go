@@ -1,14 +1,14 @@
 package aws
 
-type AwsCloudProvider struct {
+type CloudProvider struct {
 }
 
-func (a AwsCloudProvider) InstantiateKubernetesCluster() error {
+func (a CloudProvider) InstantiateKubernetesCluster() error {
 	//TODO implement me
 	panic("implement me")
 	return nil
 }
 
-func NewAwsCloudProvider() *AwsCloudProvider {
-	return &AwsCloudProvider{}
+func NewAwsCloudProvider() *CloudProvider {
+	return &CloudProvider{}
 }

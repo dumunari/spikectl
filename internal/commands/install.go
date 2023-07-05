@@ -26,8 +26,9 @@ func (c *InstallCommand) Execute() error {
 
 	provider := cloud.NewCloudProvider(cfg)
 
-	provider.CreateResourceGroup()
-	provider.CreateKubernetesCluster()
+	if err = provider.InstantiateKubernetesCluster(); err != nil {
+		return err
+	}
 
 	return nil
 }

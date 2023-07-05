@@ -3,26 +3,20 @@ package azure
 import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"log"
 	"spikectl/internal/config"
 )
 
-func (p *AzureCloudProvider) retrieveResourceGroup() (*armresources.ResourceGroup, error) {
+func (p *CloudProvider) retrieveResourceGroup() (*armresources.ResourceGroup, error) {
 
 	subscriptionID := p.azureConfig.SubscriptionId
 	if len(subscriptionID) == 0 {
 		log.Fatal("Azure Subscription ID wasn't provided")
 	}
 
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	ctx := context.Background()
-	resourcesClientsFactory, err := armresources.NewClientFactory(subscriptionID, cred, nil)
+	resourcesClientsFactory, err := armresources.NewClientFactory(subscriptionID, p.credentials, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
