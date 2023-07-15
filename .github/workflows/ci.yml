@@ -84,4 +84,4 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ github.token }}
-          branch: ci/workflow
+          branch: ${{ github.head_ref }}
