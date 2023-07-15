@@ -3,11 +3,12 @@ package azure
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"log"
-	"spikectl/internal/config"
+	"github.com/dumunari/spikectl/internal/config"
 )
 
 func (p *CloudProvider) retrieveVirtualNetwork(rg *armresources.ResourceGroup) (*armnetwork.VirtualNetwork, error) {

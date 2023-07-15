@@ -2,10 +2,11 @@ package azure
 
 import (
 	"context"
+	"log"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"log"
-	"spikectl/internal/config"
+	"github.com/dumunari/spikectl/internal/config"
 )
 
 func (p *CloudProvider) retrieveResourceGroup() (*armresources.ResourceGroup, error) {

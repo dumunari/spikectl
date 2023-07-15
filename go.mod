@@ -1,4 +1,4 @@
-module spikectl
+module github.com/dumunari/spikectl
 
 go 1.20
 
