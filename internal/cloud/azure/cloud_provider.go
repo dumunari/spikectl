@@ -1,9 +1,10 @@
 package azure
 
 import (
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"log"
-	"spikectl/internal/config"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/dumunari/spikectl/internal/config"
 )
 
 type CloudProvider struct {

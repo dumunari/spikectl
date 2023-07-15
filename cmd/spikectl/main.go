@@ -4,7 +4,8 @@ import (
 	"flag"
 	"log"
 	"os"
-	"spikectl/internal/commands"
+
+	"github.com/dumunari/spikectl/internal/commands"
 )
 
 func main() {

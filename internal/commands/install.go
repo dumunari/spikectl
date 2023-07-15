@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"spikectl/internal/cloud"
-	"spikectl/internal/config"
+
+	"github.com/dumunari/spikectl/internal/cloud"
+	"github.com/dumunari/spikectl/internal/config"
 )
 
 type Command interface {

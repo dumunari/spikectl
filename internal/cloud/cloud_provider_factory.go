@@ -1,9 +1,9 @@
 package cloud
 
 import (
-	"spikectl/internal/cloud/aws"
-	"spikectl/internal/cloud/azure"
-	"spikectl/internal/config"
+	"github.com/dumunari/spikectl/internal/cloud/aws"
+	"github.com/dumunari/spikectl/internal/cloud/azure"
+	"github.com/dumunari/spikectl/internal/config"
 )
 
 type CloudProvider interface {
