@@ -1,5 +1,0 @@
-spikectl/internal/config/cloud_provider.go:15:	String			75.0%
-spikectl/internal/config/cloud_provider.go:24:	MarshalJSON		100.0%
-spikectl/internal/config/cloud_provider.go:27:	UnmarshalJSON		66.7%
-spikectl/internal/config/cloud_provider.go:38:	ParseCloudProvider	75.0%
-total:						(statements)		73.3%

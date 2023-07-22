@@ -22,7 +22,7 @@ func TestParseCloudProvider(t *testing.T) {
 		}
 
 		if expectedProvider != spikeConfig.IDP.CloudProvider {
-			t.Errorf("Expected clooud_provider %q, got %q", expectedProvider, spikeConfig.IDP.CloudProvider)
+			t.Errorf("Expected cloud_provider %q, got %q", expectedProvider, spikeConfig.IDP.CloudProvider)
 		}
 	}
 }

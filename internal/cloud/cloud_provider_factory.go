@@ -14,5 +14,5 @@ func NewCloudProvider(cfg *config.SpikeConfig) CloudProvider {
 	if cfg.IDP.CloudProvider == config.AZURE {
 		return azure.NewAzureCloudProvider(cfg)
 	}
-	return aws.NewAwsCloudProvider()
+	return aws.NewAwsCloudProvider(cfg)
 }
