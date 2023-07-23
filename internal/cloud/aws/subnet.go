@@ -32,12 +32,13 @@ func (a CloudProvider) retrieveSubnet(subnetName string) string {
 	return *output.Subnets[0].SubnetId
 }
 
-func (a CloudProvider) createSubnet(vpcId *string, subnetName string, subnetCidr string) string {
+func (a CloudProvider) createSubnet(vpcId *string, subnetName string, subnetCidr string, subnetAz string) string {
 	svc := ec2.New(a.session)
 
 	input := &ec2.CreateSubnetInput{
-		VpcId:     vpcId,
-		CidrBlock: aws.String(subnetCidr),
+		VpcId:            vpcId,
+		CidrBlock:        aws.String(subnetCidr),
+		AvailabilityZone: aws.String(subnetAz),
 		TagSpecifications: []*ec2.TagSpecification{{
 			ResourceType: aws.String("subnet"),
 			Tags: []*ec2.Tag{

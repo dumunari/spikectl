@@ -14,6 +14,7 @@ type CloudProvider struct {
 	session   *session.Session
 }
 
+// TODO: improve this method
 func (a *CloudProvider) InstantiateKubernetesCluster() error {
 	vpcId := a.retrieveVpc()
 	if vpcId == "" {
@@ -24,14 +25,31 @@ func (a *CloudProvider) InstantiateKubernetesCluster() error {
 	publicSubnetId := a.retrieveSubnet(a.awsConfig.VPC.Subnets.PublicSubnetName)
 	if publicSubnetId == "" {
 		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.Subnets.PublicSubnetName)
-		a.createSubnet(&vpcId, a.awsConfig.VPC.Subnets.PublicSubnetName, a.awsConfig.VPC.Subnets.PublicSubnetCidr)
+		a.createSubnet(&vpcId, a.awsConfig.VPC.Subnets.PublicSubnetName, a.awsConfig.VPC.Subnets.PublicSubnetCidr, a.awsConfig.VPC.Subnets.PublicSubnetAz)
 	}
 
 	privateSubnetId := a.retrieveSubnet(a.awsConfig.VPC.Subnets.PrivateSubnetName)
 	if privateSubnetId == "" {
 		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.Subnets.PrivateSubnetName)
-		a.createSubnet(&vpcId, a.awsConfig.VPC.Subnets.PrivateSubnetName, a.awsConfig.VPC.Subnets.PrivateSubnetCidr)
+		a.createSubnet(&vpcId, a.awsConfig.VPC.Subnets.PrivateSubnetName, a.awsConfig.VPC.Subnets.PrivateSubnetCidr, a.awsConfig.VPC.Subnets.PrivateSubnetAz)
 	}
+
+	eksCluster := a.retrieveCluster()
+	if len(eksCluster) != 0 {
+		return nil
+	}
+
+	fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.EKS.Name)
+
+	//TODO: improve role and attachRole actions
+	iamRole := a.retrieveRole()
+	if iamRole == "" {
+		fmt.Println("[🐶] No eksClusterRole found, creating one...")
+		iamRole = a.createRole()
+	}
+	a.attachRolePolicy()
+
+	a.createCluster(iamRole, publicSubnetId, privateSubnetId)
 
 	return nil
 }
