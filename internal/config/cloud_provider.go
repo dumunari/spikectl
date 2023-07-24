@@ -10,6 +10,7 @@ type CloudProvider uint8
 const (
 	AWS CloudProvider = iota + 1
 	AZURE
+	GCP
 )
 
 func (c *CloudProvider) String() string {
@@ -18,6 +19,8 @@ func (c *CloudProvider) String() string {
 		return "AWS"
 	case AZURE:
 		return "Azure"
+	case GCP:
+		return "GCP"
 	}
 	return "unknown"
 }
@@ -41,6 +44,8 @@ func ParseCloudProvider(s string) (CloudProvider, error) {
 		return AWS, nil
 	case "Azure":
 		return AZURE, nil
+	case "GCP":
+		return GCP, nil
 	}
 	return CloudProvider(0), fmt.Errorf("%q is not a supported cloud platform", s)
 }

@@ -8,6 +8,7 @@ func TestCloudProvider_MarshalJSON(t *testing.T) {
 	testParameter := map[CloudProvider]string{
 		AWS:   "\"AWS\"",
 		AZURE: "\"Azure\"",
+		GCP: "\"GCP\"",
 	}
 
 	for provider, expectedResult := range testParameter {
@@ -27,6 +28,7 @@ func TestCloudProvider_UnmarshalJSON(t *testing.T) {
 	testParameters := map[string]CloudProvider{
 		"\"AWS\"":   AWS,
 		"\"Azure\"": AZURE,
+		"\"GCP\"":   GCP,
 	}
 
 	for value, expectedProvider := range testParameters {

@@ -10,6 +10,7 @@ func TestParseCloudProvider(t *testing.T) {
 	testParameters := map[string]CloudProvider{
 		"Azure": AZURE,
 		"AWS":   AWS,
+		"GCP":   GCP,
 	}
 
 	for value, expectedProvider := range testParameters {

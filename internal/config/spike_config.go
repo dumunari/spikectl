@@ -8,6 +8,7 @@ type IDPConfig struct {
 	CloudProvider CloudProvider `json:"cloud_provider"`
 	AzureConfig   AzureConfig   `json:"azure"`
 	AwsConfig     AwsConfig     `json:"aws"`
+	GcpConfig     GcpConfig     `json:"gcp"`
 }
 
 type AwsConfig struct {
@@ -15,6 +16,12 @@ type AwsConfig struct {
 	Region  string    `json:"region"`
 	VPC     VPCConfig `json:"vpc"`
 	EKS     EKSConfig `json:"eks"`
+}
+
+type GcpConfig struct {
+	ProjectId string `json:"project_id"`
+	Zone  string    `json:"zone"`
+	GKE     GKEConfig `json:"gke"`
 }
 
 type VPCConfig struct {
@@ -34,6 +41,12 @@ type SubnetConfig struct {
 
 type EKSConfig struct {
 	Name string `json:"name"`
+}
+
+type GKEConfig struct {
+	Name string `json:"name"`
+	Version string `json:"version"`
+	InitialNodeCount int64 `json:"initial_node_count"`
 }
 
 type AzureConfig struct {
