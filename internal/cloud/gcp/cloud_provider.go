@@ -1,18 +1,18 @@
-package azure
+package gcp
 
 import (
-	"log"
 	"context"
 	"fmt"
+	"log"
 
-	"google.golang.org/api/container/v1"
-	"golang.org/x/oauth2/google"
 	"github.com/dumunari/spikectl/internal/config"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/container/v1"
 )
 
 type CloudProvider struct {
-	gcpConfig 	config.GcpConfig
-	client    	*container.Service
+	gcpConfig   config.GcpConfig
+	client      *container.Service
 	credentials *google.Credentials
 }
 
@@ -47,20 +47,37 @@ func NewGcpCloudProvider(config *config.SpikeConfig) *CloudProvider {
 }
 
 func (a *CloudProvider) InstantiateKubernetesCluster() error {
+	vpcId := a.retrieveVpc()
+	if vpcId == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.gcpConfig.VPC.Name)
+		vpcId = a.createVpc()
+	}
+
+	publicSubnetId := a.retrieveSubnet(a.gcpConfig.VPC.Subnets.PublicSubnetName, a.gcpConfig.VPC.Subnets.PublicSubnetAz)
+	if publicSubnetId == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.gcpConfig.VPC.Subnets.PublicSubnetName)
+		a.createSubnet(vpcId, a.gcpConfig.VPC.Subnets.PublicSubnetName, a.gcpConfig.VPC.Subnets.PublicSubnetCidr, a.gcpConfig.VPC.Subnets.PublicSubnetAz)
+	}
+
+	privateSubnetId := a.retrieveSubnet(a.gcpConfig.VPC.Subnets.PrivateSubnetName, a.gcpConfig.VPC.Subnets.PrivateSubnetAz)
+	if privateSubnetId == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.gcpConfig.VPC.Subnets.PrivateSubnetName)
+		a.createSubnet(vpcId, a.gcpConfig.VPC.Subnets.PrivateSubnetName, a.gcpConfig.VPC.Subnets.PrivateSubnetCidr, a.gcpConfig.VPC.Subnets.PrivateSubnetAz)
+	}
+
 	cluster := &container.Cluster{
-		Name: a.gcpConfig.GKE.Name,
-		Zone: a.gcpConfig.Zone,
-		InitialNodeCount:  a.gcpConfig.GKE.InitialNodeCount,
+		Name:                  a.gcpConfig.GKE.Name,
+		Zone:                  a.gcpConfig.Zone,
+		InitialNodeCount:      a.gcpConfig.GKE.InitialNodeCount,
 		InitialClusterVersion: a.gcpConfig.GKE.Version,
 	}
 
 	createClusterRequest := &container.CreateClusterRequest{
-		Cluster: cluster,
-		Parent: fmt.Sprintf("projects/%s/locations/%s", a.gcpConfig.ProjectId, a.gcpConfig.Zone),
+		Cluster:   cluster,
+		Parent:    fmt.Sprintf("projects/%s/locations/%s", a.gcpConfig.ProjectId, a.gcpConfig.Zone),
 		ProjectId: a.gcpConfig.ProjectId,
-		Zone: a.gcpConfig.Zone,
+		Zone:      a.gcpConfig.Zone,
 	}
-
 
 	_, err := a.client.Projects.Locations.Clusters.Create(createClusterRequest.Parent, createClusterRequest).Do()
 
