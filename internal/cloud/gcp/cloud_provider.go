@@ -65,24 +65,10 @@ func (a *CloudProvider) InstantiateKubernetesCluster() error {
 		a.createSubnet(vpcId, a.gcpConfig.VPC.Subnets.PrivateSubnetName, a.gcpConfig.VPC.Subnets.PrivateSubnetCidr, a.gcpConfig.VPC.Subnets.PrivateSubnetAz)
 	}
 
-	cluster := &container.Cluster{
-		Name:                  a.gcpConfig.GKE.Name,
-		Zone:                  a.gcpConfig.Zone,
-		InitialNodeCount:      a.gcpConfig.GKE.InitialNodeCount,
-		InitialClusterVersion: a.gcpConfig.GKE.Version,
-	}
-
-	createClusterRequest := &container.CreateClusterRequest{
-		Cluster:   cluster,
-		Parent:    fmt.Sprintf("projects/%s/locations/%s", a.gcpConfig.ProjectId, a.gcpConfig.Zone),
-		ProjectId: a.gcpConfig.ProjectId,
-		Zone:      a.gcpConfig.Zone,
-	}
-
-	_, err := a.client.Projects.Locations.Clusters.Create(createClusterRequest.Parent, createClusterRequest).Do()
-
-	if err != nil {
-		log.Fatal(fmt.Sprintf("[🐶] Error creating GKE cluster: %v", err))
+	cluster := a.retrieveCluster()
+	if cluster == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.gcpConfig.GKE.Name)
+		a.createCluster(vpcId, publicSubnetId)
 	}
 
 	return nil
