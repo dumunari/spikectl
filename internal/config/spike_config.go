@@ -19,9 +19,10 @@ type AwsConfig struct {
 }
 
 type GcpConfig struct {
-	ProjectId string `json:"project_id"`
-	Zone  string    `json:"zone"`
-	GKE     GKEConfig `json:"gke"`
+	ProjectId string    `json:"project_id"`
+	Zone      string    `json:"zone"`
+	GKE       GKEConfig `json:"gke"`
+	VPC       VPCConfig `json:"vpc"`
 }
 
 type VPCConfig struct {
@@ -44,9 +45,9 @@ type EKSConfig struct {
 }
 
 type GKEConfig struct {
-	Name string `json:"name"`
-	Version string `json:"version"`
-	InitialNodeCount int64 `json:"initial_node_count"`
+	Name             string `json:"name"`
+	Version          string `json:"version"`
+	InitialNodeCount int64  `json:"initial_node_count"`
 }
 
 type AzureConfig struct {
