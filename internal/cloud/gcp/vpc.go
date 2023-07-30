@@ -8,6 +8,16 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
+func (a *CloudProvider) getOrCreateVpc(vpcName string) string {
+	vpcId := a.retrieveVpc()
+
+	if vpcId == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", vpcName)
+		vpcId = a.createVpc()
+	}
+	return vpcId
+}
+
 func (a *CloudProvider) retrieveVpc() string {
 	ctx := context.Background()
 
@@ -47,6 +57,12 @@ func (a *CloudProvider) createVpc() string {
 	op, err := service.Networks.Insert(a.gcpConfig.ProjectId, vpc).Context(ctx).Do()
 	if err != nil {
 		log.Fatal("[🐶] Error creating VPC: ", err)
+	}
+
+	wait_op, err := service.GlobalOperations.Wait(a.gcpConfig.ProjectId, op.Name).Context(ctx).Do()
+
+	if err != nil || wait_op.Error != nil {
+		log.Fatal("[🐶] Error waiting for operation: ", err)
 	}
 
 	fmt.Printf("[🐶] %s Successfully created: %s\n", a.gcpConfig.VPC.Name, op.TargetLink)

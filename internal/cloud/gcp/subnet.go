@@ -8,6 +8,17 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
+func (a *CloudProvider) getOrCreateSubnet(vpcLink, subnetName, subnetRegion, subnetCidr string) string {
+	subnetId := a.retrieveSubnet(subnetName, subnetRegion)
+
+	if subnetId == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", subnetName)
+		subnetId = a.createSubnet(vpcLink, subnetName, subnetCidr, subnetRegion)
+	}
+
+	return subnetId
+}
+
 func (a *CloudProvider) retrieveSubnet(subnetName, subnetRegion string) string {
 	ctx := context.Background()
 

@@ -33,11 +33,11 @@ func (a *CloudProvider) retrieveCluster() string {
 	return ""
 }
 
-func (a *CloudProvider) createCluster(vpcId, publicSubnetId string) {
+func (a *CloudProvider) createCluster(vpcLink, publicSubnetLink string) {
 	cluster := &container.Cluster{
 		Name:                  a.gcpConfig.GKE.Name,
-		Network:               vpcId,
-		Subnetwork:            publicSubnetId,
+		Network:               vpcLink,
+		Subnetwork:            publicSubnetLink,
 		Zone:                  a.gcpConfig.Zone,
 		InitialNodeCount:      a.gcpConfig.GKE.InitialNodeCount,
 		InitialClusterVersion: a.gcpConfig.GKE.Version,

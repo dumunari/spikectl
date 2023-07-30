@@ -47,28 +47,14 @@ func NewGcpCloudProvider(config *config.SpikeConfig) *CloudProvider {
 }
 
 func (a *CloudProvider) InstantiateKubernetesCluster() error {
-	vpcId := a.retrieveVpc()
-	if vpcId == "" {
-		fmt.Printf("[🐶] No %s found, creating one...\n", a.gcpConfig.VPC.Name)
-		vpcId = a.createVpc()
-	}
+	vpcLink := a.getOrCreateVpc(a.gcpConfig.VPC.Name)
 
-	publicSubnetId := a.retrieveSubnet(a.gcpConfig.VPC.Subnets.PublicSubnetName, a.gcpConfig.VPC.Subnets.PublicSubnetAz)
-	if publicSubnetId == "" {
-		fmt.Printf("[🐶] No %s found, creating one...\n", a.gcpConfig.VPC.Subnets.PublicSubnetName)
-		a.createSubnet(vpcId, a.gcpConfig.VPC.Subnets.PublicSubnetName, a.gcpConfig.VPC.Subnets.PublicSubnetCidr, a.gcpConfig.VPC.Subnets.PublicSubnetAz)
-	}
-
-	privateSubnetId := a.retrieveSubnet(a.gcpConfig.VPC.Subnets.PrivateSubnetName, a.gcpConfig.VPC.Subnets.PrivateSubnetAz)
-	if privateSubnetId == "" {
-		fmt.Printf("[🐶] No %s found, creating one...\n", a.gcpConfig.VPC.Subnets.PrivateSubnetName)
-		a.createSubnet(vpcId, a.gcpConfig.VPC.Subnets.PrivateSubnetName, a.gcpConfig.VPC.Subnets.PrivateSubnetCidr, a.gcpConfig.VPC.Subnets.PrivateSubnetAz)
-	}
+	publicSubnetId := a.getOrCreateSubnet(vpcLink, a.gcpConfig.VPC.Subnets.PublicSubnetName, a.gcpConfig.VPC.Subnets.PublicSubnetAz, a.gcpConfig.VPC.Subnets.PublicSubnetCidr)
 
 	cluster := a.retrieveCluster()
 	if cluster == "" {
 		fmt.Printf("[🐶] No %s found, creating one...\n", a.gcpConfig.GKE.Name)
-		a.createCluster(vpcId, publicSubnetId)
+		a.createCluster(vpcLink, publicSubnetId)
 	}
 
 	return nil
