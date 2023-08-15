@@ -14,16 +14,16 @@ func TestParseCloudProvider(t *testing.T) {
 	}
 
 	for value, expectedProvider := range testParameters {
-		js := fmt.Sprintf("{\"idp\": {\"cloud_provider\": \"%s\"}}", value)
-		var spikeConfig SpikeConfig
+		js := fmt.Sprintf("{\"spike\": {\"cloud_provider\": \"%s\"}}", value)
+		var spikeConfig Spike
 		err := json.Unmarshal([]byte(js), &spikeConfig)
 
 		if err != nil {
 			t.Errorf("Error while trying to unmarshal an spikeconfig json")
 		}
 
-		if expectedProvider != spikeConfig.IDP.CloudProvider {
-			t.Errorf("Expected cloud_provider %q, got %q", expectedProvider, spikeConfig.IDP.CloudProvider)
+		if expectedProvider != spikeConfig.Spike.CloudProvider {
+			t.Errorf("Expected cloud_provider %q, got %q", expectedProvider, spikeConfig.Spike.CloudProvider)
 		}
 	}
 }

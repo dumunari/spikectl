@@ -55,7 +55,86 @@ func (a CloudProvider) createVpc() string {
 		log.Fatal("[🐶] Error creating VPC: ", err)
 	}
 
-	fmt.Printf("[🐶] %s Succesfully created: %s\n", a.awsConfig.VPC.Name, *vpc.Vpc.VpcId)
+	fmt.Printf("[🐶] %s Successfully created: %s\n", a.awsConfig.VPC.Name, *vpc.Vpc.VpcId)
 
 	return *vpc.Vpc.VpcId
+}
+
+func (a CloudProvider) retrieveMainRouteTable(vpcId string) string {
+	svc := ec2.New(a.session)
+
+	output, err := svc.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("vpc-id"),
+				Values: []*string{aws.String(vpcId)},
+			},
+		},
+	})
+
+	if err != nil {
+		log.Fatal("[🐶] Error describing Route Tables: ", err)
+	}
+
+	if len(output.RouteTables) == 0 {
+		return ""
+	}
+
+	fmt.Printf("[🐶] Found Route Table with Id: %s\n", *output.RouteTables[0].RouteTableId)
+
+	return *output.RouteTables[0].RouteTableId
+}
+
+func (a CloudProvider) createPublicRouteTable(vpcId string) string {
+	svc := ec2.New(a.session)
+
+	output, err := svc.CreateRouteTable(&ec2.CreateRouteTableInput{
+		VpcId: aws.String(vpcId),
+		TagSpecifications: []*ec2.TagSpecification{{
+			ResourceType: aws.String("route-table"),
+			Tags: []*ec2.Tag{
+				{
+					Key:   aws.String("Name"),
+					Value: aws.String("IDP-Public-Route-Table"),
+				},
+			},
+		}},
+	})
+
+	if err != nil {
+		log.Fatal("[🐶] Error creating Route Table: ", err)
+	}
+
+	fmt.Printf("[🐶] IDP-Public-Route-Table Successfully created with Id: %s\n", *output.RouteTable.RouteTableId)
+
+	return *output.RouteTable.RouteTableId
+}
+
+func (a CloudProvider) retrievePublicRouteTable(vpcId string) string {
+	svc := ec2.New(a.session)
+
+	output, err := svc.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
+		Filters: []*ec2.Filter{
+			&ec2.Filter{
+				Name:   aws.String("vpc-id"),
+				Values: []*string{aws.String(vpcId)},
+			},
+			&ec2.Filter{
+				Name:   aws.String("tag:Name"),
+				Values: []*string{aws.String("IDP-Public-Route-Table")},
+			},
+		},
+	})
+
+	if err != nil {
+		log.Fatal("[🐶] Error describing Route Tables: ", err)
+	}
+
+	if len(output.RouteTables) == 0 {
+		return ""
+	}
+
+	fmt.Printf("[🐶] Found IDP-Public-Route-Table with Id: %s\n", *output.RouteTables[0].RouteTableId)
+
+	return *output.RouteTables[0].RouteTableId
 }

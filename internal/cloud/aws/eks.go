@@ -21,8 +21,8 @@ func (a CloudProvider) retrieveCluster() string {
 		return ""
 	}
 
-	fmt.Printf("[🐶] Found %s with Id: %s\n", a.awsConfig.EKS.Name, *output.Cluster.Id)
-	return *output.Cluster.Id
+	fmt.Printf("[🐶] Found %s with Arn: %s\n", a.awsConfig.EKS.Name, *output.Cluster.Arn)
+	return *output.Cluster.Arn
 }
 
 func (a CloudProvider) createCluster(roleArn string, subnetIds ...string) {
@@ -31,7 +31,9 @@ func (a CloudProvider) createCluster(roleArn string, subnetIds ...string) {
 	_, err := svc.CreateCluster(&eks.CreateClusterInput{
 		Name: aws.String(a.awsConfig.EKS.Name),
 		ResourcesVpcConfig: &eks.VpcConfigRequest{
-			SubnetIds: aws.StringSlice(subnetIds),
+			SubnetIds:             aws.StringSlice(subnetIds),
+			EndpointPrivateAccess: aws.Bool(true),
+			EndpointPublicAccess:  aws.Bool(true),
 		},
 		RoleArn: &roleArn,
 	})

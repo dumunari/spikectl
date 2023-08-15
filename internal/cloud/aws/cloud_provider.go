@@ -16,47 +16,94 @@ type CloudProvider struct {
 
 // TODO: improve this method
 func (a *CloudProvider) InstantiateKubernetesCluster() error {
+	fmt.Println("[🐶] Checking network resources...")
+
 	vpcId := a.retrieveVpc()
 	if vpcId == "" {
 		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.Name)
 		vpcId = a.createVpc()
 	}
+	mainRouteTableId := a.retrieveMainRouteTable(vpcId)
+
+	publicRouteTableId := a.retrievePublicRouteTable(vpcId)
+	if publicRouteTableId == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.Name)
+		publicRouteTableId = a.createPublicRouteTable(vpcId)
+	}
+
+	igwId := a.retrieveInternetGateway()
+	if igwId == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.InternetGateway.Name)
+		igwId = a.createInternetGateway()
+		a.attachInternetGateway(vpcId, igwId)
+	}
 
 	publicSubnetId := a.retrieveSubnet(a.awsConfig.VPC.Subnets.PublicSubnetName)
 	if publicSubnetId == "" {
 		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.Subnets.PublicSubnetName)
-		a.createSubnet(&vpcId, a.awsConfig.VPC.Subnets.PublicSubnetName, a.awsConfig.VPC.Subnets.PublicSubnetCidr, a.awsConfig.VPC.Subnets.PublicSubnetAz)
+		publicSubnetId = a.createSubnet(&vpcId, a.awsConfig.VPC.Subnets.PublicSubnetName, a.awsConfig.VPC.Subnets.PublicSubnetCidr, a.awsConfig.VPC.Subnets.PublicSubnetAz)
+		a.addPublicIpAutoAssignToSubnet(publicSubnetId)
+		a.addInternetGatewayToVpcPublicRouteTable(igwId, publicRouteTableId, publicSubnetId)
+		a.associatePublicSubnetToPublicRouteTable(publicSubnetId, publicRouteTableId)
 	}
 
-	privateSubnetId := a.retrieveSubnet(a.awsConfig.VPC.Subnets.PrivateSubnetName)
-	if privateSubnetId == "" {
-		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.Subnets.PrivateSubnetName)
-		a.createSubnet(&vpcId, a.awsConfig.VPC.Subnets.PrivateSubnetName, a.awsConfig.VPC.Subnets.PrivateSubnetCidr, a.awsConfig.VPC.Subnets.PrivateSubnetAz)
+	ngwId := a.retrieveNatGateway()
+	if ngwId == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.NatGateway.Name)
+		ngwId := a.createNatGateway(publicSubnetId)
+		a.addNatGatewayToVpcMainRouteTable(mainRouteTableId, ngwId)
 	}
+
+	primaryPrivateSubnetId := a.retrieveSubnet(a.awsConfig.VPC.Subnets.PrimaryPrivateSubnetName)
+	if primaryPrivateSubnetId == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.Subnets.PrimaryPrivateSubnetName)
+		a.createSubnet(&vpcId, a.awsConfig.VPC.Subnets.PrimaryPrivateSubnetName, a.awsConfig.VPC.Subnets.PrimaryPrivateSubnetCidr, a.awsConfig.VPC.Subnets.PrimaryPrivateSubnetAz)
+	}
+
+	secondaryPrivateSubnetId := a.retrieveSubnet(a.awsConfig.VPC.Subnets.SecondaryPrivateSubnetName)
+	if secondaryPrivateSubnetId == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.Subnets.SecondaryPrivateSubnetName)
+		a.createSubnet(&vpcId, a.awsConfig.VPC.Subnets.SecondaryPrivateSubnetName, a.awsConfig.VPC.Subnets.SecondaryPrivateSubnetCidr, a.awsConfig.VPC.Subnets.SecondaryPrivateSubnetAz)
+	}
+
+	fmt.Println("[🐶] Checking Kubernetes Cluster...")
 
 	eksCluster := a.retrieveCluster()
-	if len(eksCluster) != 0 {
-		return nil
+	if len(eksCluster) == 0 {
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.EKS.Name)
+
+		//TODO: improve role and attachRole actions
+		iamClusterRole := a.retrieveClusterRole()
+		if iamClusterRole == "" {
+			fmt.Println("[🐶] No eksClusterRole found, creating one...")
+			iamClusterRole = a.createClusterRole()
+		}
+		a.attachClusterRolePolicy()
+
+		a.createCluster(iamClusterRole, publicSubnetId, primaryPrivateSubnetId, secondaryPrivateSubnetId)
 	}
 
-	fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.EKS.Name)
+	nodeGroup := a.retrieveNodeGroup()
+	if nodeGroup == "" {
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.EKS.NodeGroup.Name)
+		iamNodeRole := a.retrieveNodeRole()
+		if iamNodeRole == "" {
+			fmt.Println("[🐶] No eksNodeRole found, creating one...")
+			iamNodeRole = a.createNodeRole()
+		}
+		a.attachNodeRolePolicy()
 
-	//TODO: improve role and attachRole actions
-	iamRole := a.retrieveRole()
-	if iamRole == "" {
-		fmt.Println("[🐶] No eksClusterRole found, creating one...")
-		iamRole = a.createRole()
+		a.createNodeGroup(iamNodeRole, publicSubnetId, primaryPrivateSubnetId, secondaryPrivateSubnetId)
 	}
-	a.attachRolePolicy()
-
-	a.createCluster(iamRole, publicSubnetId, privateSubnetId)
 
 	return nil
 }
 
-func NewAwsCloudProvider(config *config.SpikeConfig) *CloudProvider {
+func NewAwsCloudProvider(config *config.Spike) *CloudProvider {
 	awsProvider := CloudProvider{}
-	awsProvider.awsConfig = config.IDP.AwsConfig
+	awsProvider.awsConfig = config.Spike.AwsConfig
+
+	fmt.Println(config.Spike.AwsConfig)
 
 	if len(awsProvider.awsConfig.Region) == 0 {
 		log.Fatal("[🐶] No AWS Region provided.")

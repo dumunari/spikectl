@@ -16,9 +16,9 @@ type CloudProvider struct {
 	credentials *google.Credentials
 }
 
-func NewGcpCloudProvider(config *config.SpikeConfig) *CloudProvider {
+func NewGcpCloudProvider(config *config.Spike) *CloudProvider {
 	gcpProvider := CloudProvider{}
-	gcpProvider.gcpConfig = config.IDP.GcpConfig
+	gcpProvider.gcpConfig = config.Spike.GcpConfig
 
 	if len(gcpProvider.gcpConfig.ProjectId) == 0 {
 		log.Fatal("[🐶] No GCP Project ID provided.")

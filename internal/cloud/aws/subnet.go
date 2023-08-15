@@ -56,6 +56,26 @@ func (a CloudProvider) createSubnet(vpcId *string, subnetName string, subnetCidr
 		log.Fatal("[🐶] Error creating Subnet: ", err)
 	}
 
-	fmt.Printf("[🐶] %s Succesfully created: %s\n", subnetName, *subnet.Subnet.SubnetId)
+	fmt.Printf("[🐶] %s Successfully created: %s\n", subnetName, *subnet.Subnet.SubnetId)
 	return *subnet.Subnet.SubnetId
+}
+
+func (a CloudProvider) addPublicIpAutoAssignToSubnet(subnetId string) string {
+	svc := ec2.New(a.session)
+
+	input := &ec2.ModifySubnetAttributeInput{
+		SubnetId: aws.String(subnetId),
+		MapPublicIpOnLaunch: &ec2.AttributeBooleanValue{
+			Value: aws.Bool(true),
+		},
+	}
+
+	_, err := svc.ModifySubnetAttribute(input)
+
+	if err != nil {
+		log.Fatal("[🐶] Error modifying Subnet: ", err)
+	}
+
+	fmt.Printf("[🐶] Successfully modified: Subnet\n")
+	return ""
 }

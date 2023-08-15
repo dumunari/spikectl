@@ -12,9 +12,9 @@ type CloudProvider struct {
 	credentials *azidentity.DefaultAzureCredential
 }
 
-func NewAzureCloudProvider(config *config.SpikeConfig) *CloudProvider {
+func NewAzureCloudProvider(config *config.Spike) *CloudProvider {
 	cloudProvider := CloudProvider{}
-	cloudProvider.azureConfig = config.IDP.AzureConfig
+	cloudProvider.azureConfig = config.Spike.AzureConfig
 
 	if len(cloudProvider.azureConfig.SubscriptionId) == 0 {
 		log.Fatal("Subscription id wasn't provided")

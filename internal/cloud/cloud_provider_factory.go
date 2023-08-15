@@ -11,11 +11,11 @@ type CloudProvider interface {
 	InstantiateKubernetesCluster() error
 }
 
-func NewCloudProvider(cfg *config.SpikeConfig) CloudProvider {
-	if cfg.IDP.CloudProvider == config.AZURE {
+func NewCloudProvider(cfg *config.Spike) CloudProvider {
+	if cfg.Spike.CloudProvider == config.AZURE {
 		return azure.NewAzureCloudProvider(cfg)
 	}
-	if cfg.IDP.CloudProvider == config.GCP {
+	if cfg.Spike.CloudProvider == config.GCP {
 		return gcp.NewGcpCloudProvider(cfg)
 	}
 	return aws.NewAwsCloudProvider(cfg)
