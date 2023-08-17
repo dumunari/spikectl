@@ -35,6 +35,16 @@ func (p *CloudProvider) InstantiateKubernetesCluster() error {
 		return err
 	}
 
-	_, err = p.retrieveVirtualNetwork(rg)
+	//_, err = p.retrieveVirtualNetwork(rg)
+
+	_, err = p.createOrUpdateAKS(&AksParameters{
+		ResourceGroup:      rg,
+		ManagedClusterName: "cluster-test",
+	})
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

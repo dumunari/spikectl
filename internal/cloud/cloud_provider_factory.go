@@ -3,7 +3,7 @@ package cloud
 import (
 	"github.com/dumunari/spikectl/internal/cloud/aws"
 	"github.com/dumunari/spikectl/internal/cloud/azure"
-	gcp "github.com/dumunari/spikectl/internal/cloud/gcp"
+	"github.com/dumunari/spikectl/internal/cloud/gcp"
 	"github.com/dumunari/spikectl/internal/config"
 )
 
