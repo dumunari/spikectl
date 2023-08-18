@@ -32,22 +32,16 @@ func NewAzureCloudProvider(config *config.Spike) *CloudProvider {
 func (az *CloudProvider) InstantiateKubernetesCluster() config.KubeConfig {
 	rg, _ := az.retrieveResourceGroup()
 
-<<<<<<< HEAD
-	//_, err = p.retrieveVirtualNetwork(rg)
+	_, err := az.retrieveVirtualNetwork(rg)
 
-	_, err = p.createOrUpdateAKS(&AksParameters{
+	aksCluster, err := az.createOrUpdateAKS(&AksParameters{
 		ResourceGroup:      rg,
 		ManagedClusterName: "cluster-test",
 	})
 
 	if err != nil {
-		return err
+		log.Fatal("Error creating cluster:", err)
 	}
 
-	return nil
-=======
-	az.retrieveVirtualNetwork(rg)
-
-	return config.KubeConfig{}
->>>>>>> bf6e254 (feat: bind core components installation to aks and eks clusters)
+	return az.retrieveKubeConfigInfo(*aksCluster)
 }
