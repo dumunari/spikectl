@@ -9,34 +9,34 @@ import (
 	"github.com/dumunari/spikectl/internal/config"
 )
 
-func (p *CloudProvider) retrieveResourceGroup() (*armresources.ResourceGroup, error) {
+func (az *CloudProvider) retrieveResourceGroup() (*armresources.ResourceGroup, error) {
 
-	subscriptionID := p.azureConfig.SubscriptionId
+	subscriptionID := az.azureConfig.SubscriptionId
 	if len(subscriptionID) == 0 {
 		log.Fatal("Azure Subscription ID wasn't provided")
 	}
 
 	ctx := context.Background()
-	resourcesClientsFactory, err := armresources.NewClientFactory(subscriptionID, p.credentials, nil)
+	resourcesClientsFactory, err := armresources.NewClientFactory(subscriptionID, az.credentials, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	resourceGroupClient := resourcesClientsFactory.NewResourceGroupsClient()
 
-	exists, err := checkExistenceResourceGroup(resourceGroupClient, ctx, p.azureConfig.ResourceGroupConfig)
+	exists, err := checkExistenceResourceGroup(resourceGroupClient, ctx, az.azureConfig.ResourceGroupConfig)
 
 	var resourceGroup *armresources.ResourceGroup
 
 	if !exists {
-		resourceGroup, err = createResourceGroup(resourceGroupClient, ctx, p.azureConfig.ResourceGroupConfig)
+		resourceGroup, err = createResourceGroup(resourceGroupClient, ctx, az.azureConfig.ResourceGroupConfig)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		log.Printf("ResourceGroup created. ID: %s", *resourceGroup.ID)
 	} else {
-		resourceGroup, err = getResourceGroup(resourceGroupClient, ctx, p.azureConfig.ResourceGroupConfig)
+		resourceGroup, err = getResourceGroup(resourceGroupClient, ctx, az.azureConfig.ResourceGroupConfig)
 	}
 
 	return resourceGroup, nil

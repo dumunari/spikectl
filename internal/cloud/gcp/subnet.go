@@ -42,7 +42,7 @@ func (a *CloudProvider) retrieveSubnet(subnetName, subnetRegion string) string {
 	return resp.Items[0].SelfLink
 }
 
-func (a *CloudProvider) createSubnet(vpcLink, subnetName, subnetCidr, subnetRegion string) string {
+func (g *CloudProvider) createSubnet(vpcLink, subnetName, subnetCidr, subnetRegion string) string {
 	ctx := context.Background()
 
 	service, err := compute.NewService(ctx)
@@ -57,7 +57,7 @@ func (a *CloudProvider) createSubnet(vpcLink, subnetName, subnetCidr, subnetRegi
 		Region:      subnetRegion,
 	}
 
-	op, err := service.Subnetworks.Insert(a.gcpConfig.ProjectId, subnetRegion, subnet).Context(ctx).Do()
+	op, err := service.Subnetworks.Insert(g.gcpConfig.ProjectId, subnetRegion, subnet).Context(ctx).Do()
 
 	if err != nil {
 		log.Fatal("[🐶] Error creating Subnet: ", err)

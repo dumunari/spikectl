@@ -8,7 +8,7 @@ import (
 )
 
 type CloudProvider interface {
-	InstantiateKubernetesCluster() error
+	InstantiateKubernetesCluster() config.KubeConfig
 }
 
 func NewCloudProvider(cfg *config.Spike) CloudProvider {

@@ -5,56 +5,84 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/dumunari/spikectl/internal/config"
+	"github.com/dumunari/spikectl/internal/utils"
 	"google.golang.org/api/container/v1"
 )
 
-func (a *CloudProvider) retrieveCluster() string {
+func (g *CloudProvider) retrieveCluster() container.Cluster {
 	ctx := context.Background()
 
-	parent := fmt.Sprintf("projects/%s/locations/%s", a.gcpConfig.ProjectId, a.gcpConfig.Zone)
+	parent := fmt.Sprintf("projects/%s/locations/%s", g.gcpConfig.ProjectId, g.gcpConfig.Zone)
 
-	resp, err := a.client.Projects.Locations.Clusters.List(parent).Context(ctx).Do()
+	resp, err := g.client.Projects.Locations.Clusters.List(parent).Context(ctx).Do()
 
 	if err != nil {
 		log.Fatal("[🐶] Error listing GKEs: ", err)
 	}
 
 	if len(resp.Clusters) == 0 {
-		return ""
+		return container.Cluster{}
 	}
 
 	for _, cluster := range resp.Clusters {
-		if cluster.Name == a.gcpConfig.GKE.Name {
-			fmt.Printf("[🐶] Found %s with Id: %s\n", a.gcpConfig.GKE.Name, cluster.Id)
-			return cluster.SelfLink
+		if cluster.Name == g.gcpConfig.GKE.Name {
+			fmt.Printf("[🐶] Found %s with Id: %s\n", g.gcpConfig.GKE.Name, cluster.Id)
+			return *cluster
 		}
 	}
 
-	return ""
+	return container.Cluster{}
 }
 
-func (a *CloudProvider) createCluster(vpcLink, publicSubnetLink string) {
+func (g *CloudProvider) createCluster(vpcLink, publicSubnetLink string) {
 	cluster := &container.Cluster{
-		Name:                  a.gcpConfig.GKE.Name,
+		Name:                  g.gcpConfig.GKE.Name,
 		Network:               vpcLink,
 		Subnetwork:            publicSubnetLink,
-		Zone:                  a.gcpConfig.Zone,
-		InitialNodeCount:      a.gcpConfig.GKE.InitialNodeCount,
-		InitialClusterVersion: a.gcpConfig.GKE.Version,
+		Zone:                  g.gcpConfig.Zone,
+		InitialNodeCount:      g.gcpConfig.GKE.InitialNodeCount,
+		InitialClusterVersion: g.gcpConfig.GKE.Version,
 	}
 
 	createClusterRequest := &container.CreateClusterRequest{
 		Cluster:   cluster,
-		Parent:    fmt.Sprintf("projects/%s/locations/%s", a.gcpConfig.ProjectId, a.gcpConfig.Zone),
-		ProjectId: a.gcpConfig.ProjectId,
-		Zone:      a.gcpConfig.Zone,
+		Parent:    fmt.Sprintf("projects/%s/locations/%s", g.gcpConfig.ProjectId, g.gcpConfig.Zone),
+		ProjectId: g.gcpConfig.ProjectId,
+		Zone:      g.gcpConfig.Zone,
 	}
 
-	_, err := a.client.Projects.Locations.Clusters.Create(createClusterRequest.Parent, createClusterRequest).Do()
+	_, err := g.client.Projects.Locations.Clusters.Create(createClusterRequest.Parent, createClusterRequest).Do()
 
 	if err != nil {
 		log.Fatal("[🐶] Error creating Cluster: ", err)
 	}
 
-	fmt.Printf("[🐶] Successfully created %s\n", a.gcpConfig.GKE.Name)
+	fmt.Printf("[🐶] Successfully created %s\n", g.gcpConfig.GKE.Name)
+}
+
+func (g *CloudProvider) retrieveKubeConfigInfo() config.KubeConfig {
+	cluster := g.retrieveCluster()
+	kubeConfig := config.KubeConfig{
+		EndPoint: cluster.Endpoint,
+		Token:    g.retrieveKubeToken(),
+		CaFile:   g.retrieveCaFile(),
+	}
+
+	fmt.Println("[🐶] Kubeconfig successfully prepared")
+	return kubeConfig
+}
+
+func (g *CloudProvider) retrieveKubeToken() string {
+	kubeToken, err := g.credentials.TokenSource.Token()
+	if err != nil {
+		log.Fatal("[🐶] Error retrieving token: ", err)
+	}
+
+	return kubeToken.AccessToken
+}
+
+func (g *CloudProvider) retrieveCaFile() string {
+	cluster := g.retrieveCluster()
+	return utils.CreateTmpFile([]byte(cluster.MasterAuth.ClientCertificate))
 }

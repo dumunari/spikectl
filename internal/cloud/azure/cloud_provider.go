@@ -29,12 +29,10 @@ func NewAzureCloudProvider(config *config.Spike) *CloudProvider {
 	return &cloudProvider
 }
 
-func (p *CloudProvider) InstantiateKubernetesCluster() error {
-	rg, err := p.retrieveResourceGroup()
-	if err != nil {
-		return err
-	}
+func (az *CloudProvider) InstantiateKubernetesCluster() config.KubeConfig {
+	rg, _ := az.retrieveResourceGroup()
 
+<<<<<<< HEAD
 	//_, err = p.retrieveVirtualNetwork(rg)
 
 	_, err = p.createOrUpdateAKS(&AksParameters{
@@ -47,4 +45,9 @@ func (p *CloudProvider) InstantiateKubernetesCluster() error {
 	}
 
 	return nil
+=======
+	az.retrieveVirtualNetwork(rg)
+
+	return config.KubeConfig{}
+>>>>>>> bf6e254 (feat: bind core components installation to aks and eks clusters)
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/eks"
 )
 
-func (a CloudProvider) retrieveNodeGroup() string {
+func (a *CloudProvider) retrieveNodeGroup() string {
 	svc := eks.New(a.session)
 
 	output, err := svc.DescribeNodegroup(&eks.DescribeNodegroupInput{
@@ -25,7 +25,7 @@ func (a CloudProvider) retrieveNodeGroup() string {
 	return *output.Nodegroup.NodegroupArn
 }
 
-func (a CloudProvider) createNodeGroup(nodeRole string, subnetIds ...string) {
+func (a *CloudProvider) createNodeGroup(nodeRole string, subnetIds ...string) {
 	svc := eks.New(a.session)
 
 	_, err := svc.CreateNodegroup(&eks.CreateNodegroupInput{

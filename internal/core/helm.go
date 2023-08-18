@@ -13,30 +13,37 @@ import (
 )
 
 type Helm struct {
-	coreConfig   []config.CoreComponent
-	settings     *cli.EnvSettings
-	actionConfig *action.Configuration
+	coreComponents []config.CoreComponent
+	settings       *cli.EnvSettings
+	actionConfig   *action.Configuration
+	kubeConfig     config.KubeConfig
 }
 
-func InstallCoreComponents(config *config.Spike) {
+func InstallCoreComponents(spikeConfig *config.Spike, kubeConfig config.KubeConfig) {
 	fmt.Println("[🐶] Checking Core Components...")
 
 	helm := Helm{}
-	helm.coreConfig = config.Spike.CoreConfig
+	helm.coreComponents = spikeConfig.Spike.CoreComponents
+	helm.kubeConfig = kubeConfig
 
-	helm.initConfiguration("")
+	helm.initConfiguration("", helm.kubeConfig)
 
 	installedReleases := helm.checkInstalledComponents()
 
-	for _, coreComponent := range helm.coreConfig {
+	for _, coreComponent := range helm.coreComponents {
 		if !slices.Contains(installedReleases, coreComponent.ReleaseName) {
-			helm.installCoreComponents(coreComponent)
+			helm.installCoreComponent(coreComponent)
 		}
 	}
+
+	fmt.Println("[🐶] All Core Components successfully installed.")
 }
 
-func (h *Helm) initConfiguration(namespace string) {
+func (h *Helm) initConfiguration(namespace string, kubeConfig config.KubeConfig) {
 	h.settings = cli.New()
+	h.settings.KubeAPIServer = kubeConfig.EndPoint
+	h.settings.KubeCaFile = kubeConfig.CaFile
+	h.settings.KubeToken = kubeConfig.Token
 	h.actionConfig = new(action.Configuration)
 	if err := h.actionConfig.Init(h.settings.RESTClientGetter(), namespace, os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
 		log.Printf("%+v", err)
@@ -63,31 +70,34 @@ func (h *Helm) checkInstalledComponents() []string {
 	return installedReleases
 }
 
-func (h *Helm) installCoreComponents(coreComponent config.CoreComponent) {
-	h.initConfiguration(coreComponent.Namespace)
+func (h *Helm) installCoreComponent(coreComponent config.CoreComponent) {
+	if err := h.actionConfig.Init(h.settings.RESTClientGetter(), coreComponent.Namespace, os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
+		log.Printf("%+v", err)
+		os.Exit(1)
+	}
 
 	client := action.NewInstall(h.actionConfig)
 	client.Namespace = coreComponent.Namespace
 	client.ReleaseName = coreComponent.ReleaseName
 	client.RepoURL = coreComponent.Repository
-	client.Version = coreComponent.Version
+	client.Version = coreComponent.ChartVersion
 	client.CreateNamespace = true
 	client.IsUpgrade = true
 
-	chrt_path, err := client.LocateChart(coreComponent.Chart, h.settings)
+	fetch_chart, err := client.LocateChart(coreComponent.Chart, h.settings)
 	if err != nil {
 		panic(err)
 	}
 
-	myChart, err := loader.Load(chrt_path)
+	chart, err := loader.Load(fetch_chart)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Printf("[🐶] %s is being installed...\n", coreComponent.ReleaseName)
-	_, err = client.Run(myChart, nil)
+	_, err = client.Run(chart, nil)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("[🐶] %s(using chart version %s) successfully installed on namespace %s\n", coreComponent.ReleaseName, coreComponent.Version, coreComponent.Namespace)
+	fmt.Printf("[🐶] %s(using chart version %s) successfully installed on namespace %s\n", coreComponent.ReleaseName, coreComponent.ChartVersion, coreComponent.Namespace)
 }

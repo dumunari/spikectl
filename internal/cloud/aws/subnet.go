@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func (a CloudProvider) retrieveSubnet(subnetName string) string {
+func (a *CloudProvider) retrieveSubnet(subnetName string) string {
 	svc := ec2.New(a.session)
 
 	output, err := svc.DescribeSubnets(&ec2.DescribeSubnetsInput{
@@ -32,10 +32,10 @@ func (a CloudProvider) retrieveSubnet(subnetName string) string {
 	return *output.Subnets[0].SubnetId
 }
 
-func (a CloudProvider) createSubnet(vpcId *string, subnetName string, subnetCidr string, subnetAz string) string {
+func (a *CloudProvider) createSubnet(vpcId *string, subnetName string, subnetCidr string, subnetAz string) string {
 	svc := ec2.New(a.session)
 
-	input := &ec2.CreateSubnetInput{
+	subnet, _ := svc.CreateSubnet(&ec2.CreateSubnetInput{
 		VpcId:            vpcId,
 		CidrBlock:        aws.String(subnetCidr),
 		AvailabilityZone: aws.String(subnetAz),
@@ -48,34 +48,39 @@ func (a CloudProvider) createSubnet(vpcId *string, subnetName string, subnetCidr
 				},
 			},
 		}},
-	}
+	})
 
-	subnet, err := svc.CreateSubnet(input)
-
-	if err != nil {
-		log.Fatal("[🐶] Error creating Subnet: ", err)
+	fmt.Println("[🐶] Subnet creation requested, waiting for completion...")
+	if err := svc.WaitUntilSubnetAvailable(&ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("tag:Name"),
+				Values: []*string{aws.String(subnetName)},
+			},
+		},
+	}); err != nil {
+		log.Fatal("[🐶] Error waiting for Subnet creation: ", err)
 	}
 
 	fmt.Printf("[🐶] %s Successfully created: %s\n", subnetName, *subnet.Subnet.SubnetId)
+
 	return *subnet.Subnet.SubnetId
 }
 
-func (a CloudProvider) addPublicIpAutoAssignToSubnet(subnetId string) string {
+func (a *CloudProvider) addPublicIpAutoAssignToSubnet(subnetId string) string {
 	svc := ec2.New(a.session)
 
-	input := &ec2.ModifySubnetAttributeInput{
+	_, err := svc.ModifySubnetAttribute(&ec2.ModifySubnetAttributeInput{
 		SubnetId: aws.String(subnetId),
 		MapPublicIpOnLaunch: &ec2.AttributeBooleanValue{
 			Value: aws.Bool(true),
 		},
-	}
-
-	_, err := svc.ModifySubnetAttribute(input)
+	})
 
 	if err != nil {
 		log.Fatal("[🐶] Error modifying Subnet: ", err)
 	}
 
-	fmt.Printf("[🐶] Successfully modified: Subnet\n")
+	fmt.Printf("[🐶] Successfully applied Public Ip Auto Assign to subnet %s\n", a.awsConfig.VPC.Subnets.PublicSubnetName)
 	return ""
 }

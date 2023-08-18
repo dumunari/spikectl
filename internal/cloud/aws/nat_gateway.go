@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func (a CloudProvider) retrieveNatGateway() string {
+func (a *CloudProvider) retrieveNatGateway() string {
 	svc := ec2.New(a.session)
 
 	output, err := svc.DescribeNatGateways(&ec2.DescribeNatGatewaysInput{
@@ -16,6 +16,10 @@ func (a CloudProvider) retrieveNatGateway() string {
 			{
 				Name:   aws.String("tag:Name"),
 				Values: []*string{aws.String(a.awsConfig.VPC.NatGateway.Name)},
+			},
+			{
+				Name:   aws.String("state"),
+				Values: []*string{aws.String("available")},
 			},
 		},
 	})
@@ -32,12 +36,12 @@ func (a CloudProvider) retrieveNatGateway() string {
 	return *output.NatGateways[0].NatGatewayId
 }
 
-func (a CloudProvider) createNatGateway(publicSubnetId string) string {
+func (a *CloudProvider) createNatGateway(publicSubnetId string) string {
 	svc := ec2.New(a.session)
 
 	eipID := a.createIPAllocation()
 
-	input := &ec2.CreateNatGatewayInput{
+	igw, err := svc.CreateNatGateway(&ec2.CreateNatGatewayInput{
 		AllocationId: aws.String(eipID),
 		SubnetId:     aws.String(publicSubnetId),
 		TagSpecifications: []*ec2.TagSpecification{{
@@ -49,22 +53,36 @@ func (a CloudProvider) createNatGateway(publicSubnetId string) string {
 				},
 			},
 		}},
-	}
-
-	igw, err := svc.CreateNatGateway(input)
+	})
 
 	if err != nil {
 		log.Fatal("[🐶] Error creating NAT Gateway: ", err)
 	}
 
+	fmt.Println("[🐶] NAT Gateway creation requested, waiting for completion...")
+	if err := svc.WaitUntilNatGatewayAvailable(&ec2.DescribeNatGatewaysInput{
+		Filter: []*ec2.Filter{
+			{
+				Name:   aws.String("tag:Name"),
+				Values: []*string{aws.String(a.awsConfig.VPC.NatGateway.Name)},
+			},
+			{
+				Name:   aws.String("state"),
+				Values: []*string{aws.String("available")},
+			},
+		},
+	}); err != nil {
+		log.Fatal("[🐶] Error waiting for NAT Gateway creation: ", err)
+	}
 	fmt.Printf("[🐶] %s Successfully created: %s\n", a.awsConfig.VPC.NatGateway.Name, *igw.NatGateway.NatGatewayId)
+
 	return *igw.NatGateway.NatGatewayId
 }
 
-func (a CloudProvider) createIPAllocation() string {
+func (a *CloudProvider) createIPAllocation() string {
 	svc := ec2.New(a.session)
 
-	input := &ec2.AllocateAddressInput{
+	eip, err := svc.AllocateAddress(&ec2.AllocateAddressInput{
 		TagSpecifications: []*ec2.TagSpecification{{
 			ResourceType: aws.String("elastic-ip"),
 			Tags: []*ec2.Tag{
@@ -74,9 +92,7 @@ func (a CloudProvider) createIPAllocation() string {
 				},
 			},
 		}},
-	}
-
-	eip, err := svc.AllocateAddress(input)
+	})
 
 	if err != nil {
 		log.Fatal("[🐶] Error allocating IP Address: ", err)
@@ -86,21 +102,19 @@ func (a CloudProvider) createIPAllocation() string {
 	return *eip.AllocationId
 }
 
-func (a CloudProvider) addNatGatewayToVpcMainRouteTable(routeTableId string, ngwId string) string {
+func (a *CloudProvider) addNatGatewayToVpcMainRouteTable(routeTableId string, ngwId string) string {
 	svc := ec2.New(a.session)
 
-	input := &ec2.CreateRouteInput{
+	_, err := svc.CreateRoute(&ec2.CreateRouteInput{
 		DestinationCidrBlock: aws.String("0.0.0.0/0"),
 		RouteTableId:         aws.String(routeTableId),
 		NatGatewayId:         aws.String(ngwId),
-	}
-
-	_, err := svc.CreateRoute(input)
+	})
 
 	if err != nil {
 		log.Fatal("[🐶] Error creating route: ", err)
 	}
 
-	fmt.Printf("[🐶] Successfully created Route\n")
+	fmt.Printf("[🐶] Successfully created Route for %s Main Route Table <-> %s association\n", a.awsConfig.VPC.Name, a.awsConfig.VPC.NatGateway.Name)
 	return ""
 }

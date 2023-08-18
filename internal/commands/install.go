@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/dumunari/spikectl/internal/cloud"
 	"github.com/dumunari/spikectl/internal/config"
 	"github.com/dumunari/spikectl/internal/core"
 )
@@ -20,22 +21,16 @@ type InstallCommand struct {
 }
 
 func (c *InstallCommand) Execute() error {
-	cfg, err := parseConfigFile(c.ConfigPath)
+	spikeConfig, err := parseConfigFile(c.ConfigPath)
 	if err != nil {
 		return err
 	}
 
-	// provider := cloud.NewCloudProvider(cfg)
+	provider := cloud.NewCloudProvider(spikeConfig)
 
-	// if err = provider.InstantiateKubernetesCluster(); err != nil {
-	// 	return err
-	// }
+	kubeConfig := provider.InstantiateKubernetesCluster()
 
-	// if err = core.InstallCoreComponents(); err != nil {
-	// 	return err
-	// }
-
-	core.InstallCoreComponents(cfg)
+	core.InstallCoreComponents(spikeConfig, kubeConfig)
 
 	return nil
 }

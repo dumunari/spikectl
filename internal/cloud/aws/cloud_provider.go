@@ -15,7 +15,7 @@ type CloudProvider struct {
 }
 
 // TODO: improve this method
-func (a *CloudProvider) InstantiateKubernetesCluster() error {
+func (a *CloudProvider) InstantiateKubernetesCluster() config.KubeConfig {
 	fmt.Println("[🐶] Checking network resources...")
 
 	vpcId := a.retrieveVpc()
@@ -27,7 +27,7 @@ func (a *CloudProvider) InstantiateKubernetesCluster() error {
 
 	publicRouteTableId := a.retrievePublicRouteTable(vpcId)
 	if publicRouteTableId == "" {
-		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.Name)
+		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.PublicRouteTable.Name)
 		publicRouteTableId = a.createPublicRouteTable(vpcId)
 	}
 
@@ -35,7 +35,7 @@ func (a *CloudProvider) InstantiateKubernetesCluster() error {
 	if igwId == "" {
 		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.VPC.InternetGateway.Name)
 		igwId = a.createInternetGateway()
-		a.attachInternetGateway(vpcId, igwId)
+		a.attachInternetGatewayToVpc(vpcId, igwId)
 	}
 
 	publicSubnetId := a.retrieveSubnet(a.awsConfig.VPC.Subnets.PublicSubnetName)
@@ -69,7 +69,7 @@ func (a *CloudProvider) InstantiateKubernetesCluster() error {
 	fmt.Println("[🐶] Checking Kubernetes Cluster...")
 
 	eksCluster := a.retrieveCluster()
-	if len(eksCluster) == 0 {
+	if nil == eksCluster.Arn {
 		fmt.Printf("[🐶] No %s found, creating one...\n", a.awsConfig.EKS.Name)
 
 		//TODO: improve role and attachRole actions
@@ -80,7 +80,7 @@ func (a *CloudProvider) InstantiateKubernetesCluster() error {
 		}
 		a.attachClusterRolePolicy()
 
-		a.createCluster(iamClusterRole, publicSubnetId, primaryPrivateSubnetId, secondaryPrivateSubnetId)
+		eksCluster = a.createCluster(iamClusterRole, publicSubnetId, primaryPrivateSubnetId, secondaryPrivateSubnetId)
 	}
 
 	nodeGroup := a.retrieveNodeGroup()
@@ -96,14 +96,13 @@ func (a *CloudProvider) InstantiateKubernetesCluster() error {
 		a.createNodeGroup(iamNodeRole, publicSubnetId, primaryPrivateSubnetId, secondaryPrivateSubnetId)
 	}
 
-	return nil
+	fmt.Println("[🐶] Preparing kubeconfig...")
+	return a.retrieveKubeConfigInfo(eksCluster)
 }
 
 func NewAwsCloudProvider(config *config.Spike) *CloudProvider {
 	awsProvider := CloudProvider{}
 	awsProvider.awsConfig = config.Spike.AwsConfig
-
-	fmt.Println(config.Spike.AwsConfig)
 
 	if len(awsProvider.awsConfig.Region) == 0 {
 		log.Fatal("[🐶] No AWS Region provided.")

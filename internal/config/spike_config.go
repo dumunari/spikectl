@@ -5,17 +5,19 @@ type Spike struct {
 }
 
 type SpikeConfig struct {
-	CloudProvider CloudProvider   `json:"cloud_provider"`
-	AzureConfig   AzureConfig     `json:"azure"`
-	AwsConfig     AwsConfig       `json:"aws"`
-	GcpConfig     GcpConfig       `json:"gcp"`
-	CoreConfig    []CoreComponent `json:"core"`
+	CloudProvider  CloudProvider   `json:"cloud_provider"`
+	AzureConfig    AzureConfig     `json:"azure"`
+	AwsConfig      AwsConfig       `json:"aws"`
+	GcpConfig      GcpConfig       `json:"gcp"`
+	CoreComponents []CoreComponent `json:"core"`
 }
 
 type CoreComponent struct {
-	ReleaseName string `json:"release_name"`
-	Chart       string `json:"chart"`
-	Namespace   string `json:"namespace"`
-	Repository  string `json:"repository"`
-	Version     string `json:"version"`
+	ReleaseName  string `json:"release_name"`
+	Chart        string `json:"chart"`
+	Namespace    string `json:"namespace"`
+	Repository   string `json:"repository"`
+	ChartVersion string `json:"chart_version"`
+	ImageName    string `json:"image_name,omitempty"`
+	ImageVersion string `json:"image_version,omitempty"`
 }

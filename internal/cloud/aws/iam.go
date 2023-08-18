@@ -20,7 +20,7 @@ type PolicyStatement struct {
 	Action    []string          `json:"Action"`
 }
 
-func (a CloudProvider) retrieveClusterRole() string {
+func (a *CloudProvider) retrieveClusterRole() string {
 	svc := iam.New(a.session)
 
 	output, err := svc.GetRole(&iam.GetRoleInput{
@@ -37,19 +37,17 @@ func (a CloudProvider) retrieveClusterRole() string {
 	return *output.Role.Arn
 }
 
-func (a CloudProvider) createClusterRole() string {
+func (a *CloudProvider) createClusterRole() string {
 	svc := iam.New(a.session)
 
-	trustPolicy := PolicyDocument{
+	policyBytes, err := json.Marshal(PolicyDocument{
 		Version: "2012-10-17",
 		Statement: []PolicyStatement{{
 			Effect:    "Allow",
 			Principal: map[string]string{"Service": "eks.amazonaws.com"},
 			Action:    []string{"sts:AssumeRole"},
 		}},
-	}
-
-	policyBytes, err := json.Marshal(trustPolicy)
+	})
 	if err != nil {
 		log.Fatal("[🐶] Couldn't create trust policy for 'eks.amazonaws.com': ", err)
 	}
@@ -66,7 +64,7 @@ func (a CloudProvider) createClusterRole() string {
 	return *roleOutput.Role.Arn
 }
 
-func (a CloudProvider) attachClusterRolePolicy() {
+func (a *CloudProvider) attachClusterRolePolicy() {
 	svc := iam.New(a.session)
 
 	fmt.Println("[🐶] Attaching Role Policy to eksClusterRole...")
@@ -83,7 +81,7 @@ func (a CloudProvider) attachClusterRolePolicy() {
 	fmt.Println("[🐶] Role Policy Successfully Attached")
 }
 
-func (a CloudProvider) retrieveNodeRole() string {
+func (a *CloudProvider) retrieveNodeRole() string {
 	svc := iam.New(a.session)
 
 	output, err := svc.GetRole(&iam.GetRoleInput{
@@ -100,19 +98,17 @@ func (a CloudProvider) retrieveNodeRole() string {
 	return *output.Role.Arn
 }
 
-func (a CloudProvider) createNodeRole() string {
+func (a *CloudProvider) createNodeRole() string {
 	svc := iam.New(a.session)
 
-	trustPolicy := PolicyDocument{
+	policyBytes, err := json.Marshal(PolicyDocument{
 		Version: "2012-10-17",
 		Statement: []PolicyStatement{{
 			Effect:    "Allow",
 			Principal: map[string]string{"Service": "ec2.amazonaws.com"},
 			Action:    []string{"sts:AssumeRole"},
 		}},
-	}
-
-	policyBytes, err := json.Marshal(trustPolicy)
+	})
 	if err != nil {
 		log.Fatal("[🐶] Couldn't create trust policy for 'ec2.amazonaws.com': ", err)
 	}
@@ -129,7 +125,7 @@ func (a CloudProvider) createNodeRole() string {
 	return *roleOutput.Role.Arn
 }
 
-func (a CloudProvider) attachNodeRolePolicy() {
+func (a *CloudProvider) attachNodeRolePolicy() {
 	svc := iam.New(a.session)
 
 	fmt.Println("[🐶] Attaching Role Policy to eksNodeRole...")

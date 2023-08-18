@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func (a CloudProvider) retrieveVpc() string {
+func (a *CloudProvider) retrieveVpc() string {
 	svc := ec2.New(a.session)
 
 	output, err := svc.DescribeVpcs(&ec2.DescribeVpcsInput{
@@ -33,7 +33,7 @@ func (a CloudProvider) retrieveVpc() string {
 	return *output.Vpcs[0].VpcId
 }
 
-func (a CloudProvider) createVpc() string {
+func (a *CloudProvider) createVpc() string {
 	svc := ec2.New(a.session)
 
 	input := &ec2.CreateVpcInput{
@@ -60,7 +60,7 @@ func (a CloudProvider) createVpc() string {
 	return *vpc.Vpc.VpcId
 }
 
-func (a CloudProvider) retrieveMainRouteTable(vpcId string) string {
+func (a *CloudProvider) retrieveMainRouteTable(vpcId string) string {
 	svc := ec2.New(a.session)
 
 	output, err := svc.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
@@ -85,7 +85,7 @@ func (a CloudProvider) retrieveMainRouteTable(vpcId string) string {
 	return *output.RouteTables[0].RouteTableId
 }
 
-func (a CloudProvider) createPublicRouteTable(vpcId string) string {
+func (a *CloudProvider) createPublicRouteTable(vpcId string) string {
 	svc := ec2.New(a.session)
 
 	output, err := svc.CreateRouteTable(&ec2.CreateRouteTableInput{
@@ -95,7 +95,7 @@ func (a CloudProvider) createPublicRouteTable(vpcId string) string {
 			Tags: []*ec2.Tag{
 				{
 					Key:   aws.String("Name"),
-					Value: aws.String("IDP-Public-Route-Table"),
+					Value: aws.String(a.awsConfig.VPC.PublicRouteTable.Name),
 				},
 			},
 		}},
@@ -105,23 +105,23 @@ func (a CloudProvider) createPublicRouteTable(vpcId string) string {
 		log.Fatal("[🐶] Error creating Route Table: ", err)
 	}
 
-	fmt.Printf("[🐶] IDP-Public-Route-Table Successfully created with Id: %s\n", *output.RouteTable.RouteTableId)
+	fmt.Printf("[🐶] %s Successfully created with Id: %s\n", a.awsConfig.VPC.PublicRouteTable.Name, *output.RouteTable.RouteTableId)
 
 	return *output.RouteTable.RouteTableId
 }
 
-func (a CloudProvider) retrievePublicRouteTable(vpcId string) string {
+func (a *CloudProvider) retrievePublicRouteTable(vpcId string) string {
 	svc := ec2.New(a.session)
 
 	output, err := svc.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
 		Filters: []*ec2.Filter{
-			&ec2.Filter{
+			{
 				Name:   aws.String("vpc-id"),
 				Values: []*string{aws.String(vpcId)},
 			},
-			&ec2.Filter{
+			{
 				Name:   aws.String("tag:Name"),
-				Values: []*string{aws.String("IDP-Public-Route-Table")},
+				Values: []*string{aws.String(a.awsConfig.VPC.PublicRouteTable.Name)},
 			},
 		},
 	})
@@ -134,7 +134,7 @@ func (a CloudProvider) retrievePublicRouteTable(vpcId string) string {
 		return ""
 	}
 
-	fmt.Printf("[🐶] Found IDP-Public-Route-Table with Id: %s\n", *output.RouteTables[0].RouteTableId)
+	fmt.Printf("[🐶] Found %s with Id: %s\n", a.awsConfig.VPC.PublicRouteTable.Name, *output.RouteTables[0].RouteTableId)
 
 	return *output.RouteTables[0].RouteTableId
 }

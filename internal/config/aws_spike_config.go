@@ -8,11 +8,12 @@ type AwsConfig struct {
 }
 
 type VPCConfig struct {
-	Name            string                `json:"name"`
-	CIDR            string                `json:"cidr"`
-	Subnets         SubnetConfig          `json:"subnets"`
-	InternetGateway InternetGatewayConfig `json:"internet_gateway"`
-	NatGateway      NatGatewayConfig      `json:"nat_gateway"`
+	Name             string                `json:"name"`
+	CIDR             string                `json:"cidr"`
+	Subnets          SubnetConfig          `json:"subnets"`
+	InternetGateway  InternetGatewayConfig `json:"internet_gateway"`
+	NatGateway       NatGatewayConfig      `json:"nat_gateway"`
+	PublicRouteTable RouteTableConfig      `json:"public_route_table"`
 }
 
 type SubnetConfig struct {
@@ -35,14 +36,13 @@ type NatGatewayConfig struct {
 	Name string `json:"name"`
 }
 
-type EKSConfig struct {
-	Name          string              `json:"name"`
-	SecurityGroup SecurityGroupConfig `json:"security_group"`
-	NodeGroup     NodeGroupConfig     `json:"node_group"`
+type RouteTableConfig struct {
+	Name string `json:"name"`
 }
 
-type SecurityGroupConfig struct {
-	Name string `json:"name"`
+type EKSConfig struct {
+	Name      string          `json:"name"`
+	NodeGroup NodeGroupConfig `json:"node_group"`
 }
 
 type NodeGroupConfig struct {
