@@ -58,8 +58,16 @@ func (a *CloudProvider) createClusterRole() string {
 	})
 
 	if err != nil {
-		log.Fatal("[🐶] Error creating Role: ", err)
+		log.Fatal("[🐶] Error creating Cluster Role: ", err)
 	}
+
+	fmt.Println("[🐶] Cluster role creation requested, waiting for completion...")
+	if err := svc.WaitUntilRoleExists(&iam.GetRoleInput{
+		RoleName: aws.String("eksClusterRole"),
+	}); err != nil {
+		log.Fatal("[🐶] Error waiting for role creation: ", err)
+	}
+	fmt.Println("[🐶] Successfully created eksClusterRole")
 
 	return *roleOutput.Role.Arn
 }
@@ -119,8 +127,16 @@ func (a *CloudProvider) createNodeRole() string {
 	})
 
 	if err != nil {
-		log.Fatal("[🐶] Error creating Role: ", err)
+		log.Fatal("[🐶] Error creating Node Role: ", err)
 	}
+
+	fmt.Println("[🐶] Node role creation requested, waiting for completion...")
+	if err := svc.WaitUntilRoleExists(&iam.GetRoleInput{
+		RoleName: aws.String("eksNodeRole"),
+	}); err != nil {
+		log.Fatal("[🐶] Error waiting for role creation: ", err)
+	}
+	fmt.Println("[🐶] Successfully created eksNodeRole")
 
 	return *roleOutput.Role.Arn
 }

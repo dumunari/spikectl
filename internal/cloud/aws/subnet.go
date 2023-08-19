@@ -35,7 +35,7 @@ func (a *CloudProvider) retrieveSubnet(subnetName string) string {
 func (a *CloudProvider) createSubnet(vpcId *string, subnetName string, subnetCidr string, subnetAz string) string {
 	svc := ec2.New(a.session)
 
-	subnet, _ := svc.CreateSubnet(&ec2.CreateSubnetInput{
+	subnet, err := svc.CreateSubnet(&ec2.CreateSubnetInput{
 		VpcId:            vpcId,
 		CidrBlock:        aws.String(subnetCidr),
 		AvailabilityZone: aws.String(subnetAz),
@@ -50,6 +50,10 @@ func (a *CloudProvider) createSubnet(vpcId *string, subnetName string, subnetCid
 		}},
 	})
 
+	if err != nil {
+		log.Fatal("[🐶] Error creating Subnet: ", err)
+	}
+
 	fmt.Println("[🐶] Subnet creation requested, waiting for completion...")
 	if err := svc.WaitUntilSubnetAvailable(&ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
@@ -61,7 +65,6 @@ func (a *CloudProvider) createSubnet(vpcId *string, subnetName string, subnetCid
 	}); err != nil {
 		log.Fatal("[🐶] Error waiting for Subnet creation: ", err)
 	}
-
 	fmt.Printf("[🐶] %s Successfully created: %s\n", subnetName, *subnet.Subnet.SubnetId)
 
 	return *subnet.Subnet.SubnetId
