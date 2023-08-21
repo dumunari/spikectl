@@ -8,6 +8,7 @@ import (
 
 	"github.com/dumunari/spikectl/internal/cloud"
 	"github.com/dumunari/spikectl/internal/config"
+	"github.com/dumunari/spikectl/internal/core"
 )
 
 type Command interface {
@@ -16,25 +17,25 @@ type Command interface {
 
 type InstallCommand struct {
 	ConfigPath string
-	Config     config.SpikeConfig
+	Config     config.Spike
 }
 
 func (c *InstallCommand) Execute() error {
-	cfg, err := parseConfigFile(c.ConfigPath)
+	spikeConfig, err := parseConfigFile(c.ConfigPath)
 	if err != nil {
 		return err
 	}
 
-	provider := cloud.NewCloudProvider(cfg)
+	provider := cloud.NewCloudProvider(spikeConfig)
 
-	if err = provider.InstantiateKubernetesCluster(); err != nil {
-		return err
-	}
+	kubeConfig := provider.InstantiateKubernetesCluster()
+
+	core.InstallCoreComponents(spikeConfig, kubeConfig)
 
 	return nil
 }
 
-func parseConfigFile(configPath string) (*config.SpikeConfig, error) {
+func parseConfigFile(configPath string) (*config.Spike, error) {
 	file, err := os.Open(configPath)
 	if err != nil {
 		fmt.Printf("Error while trying to open the file %s", configPath)
@@ -53,7 +54,7 @@ func parseConfigFile(configPath string) (*config.SpikeConfig, error) {
 		return nil, err
 	}
 
-	var cfg config.SpikeConfig
+	var cfg config.Spike
 	err = json.Unmarshal(data, &cfg)
 	if err != nil {
 		fmt.Printf("Error while trying to unmarshal the spike config json")

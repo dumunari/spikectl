@@ -12,9 +12,9 @@ type CloudProvider struct {
 	credentials *azidentity.DefaultAzureCredential
 }
 
-func NewAzureCloudProvider(config *config.SpikeConfig) *CloudProvider {
+func NewAzureCloudProvider(config *config.Spike) *CloudProvider {
 	cloudProvider := CloudProvider{}
-	cloudProvider.azureConfig = config.IDP.AzureConfig
+	cloudProvider.azureConfig = config.Spike.AzureConfig
 
 	if len(cloudProvider.azureConfig.SubscriptionId) == 0 {
 		log.Fatal("Subscription id wasn't provided")
@@ -29,22 +29,19 @@ func NewAzureCloudProvider(config *config.SpikeConfig) *CloudProvider {
 	return &cloudProvider
 }
 
-func (p *CloudProvider) InstantiateKubernetesCluster() error {
-	rg, err := p.retrieveResourceGroup()
-	if err != nil {
-		return err
-	}
+func (az *CloudProvider) InstantiateKubernetesCluster() config.KubeConfig {
+	rg, _ := az.retrieveResourceGroup()
 
-	//_, err = p.retrieveVirtualNetwork(rg)
+	_, err := az.retrieveVirtualNetwork(rg)
 
-	_, err = p.createOrUpdateAKS(&AksParameters{
+	aksCluster, err := az.createOrUpdateAKS(&AksParameters{
 		ResourceGroup:      rg,
 		ManagedClusterName: "cluster-test",
 	})
 
 	if err != nil {
-		return err
+		log.Fatal("Error creating cluster:", err)
 	}
 
-	return nil
+	return az.retrieveKubeConfigInfo(*aksCluster)
 }

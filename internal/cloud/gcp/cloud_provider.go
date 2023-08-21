@@ -16,9 +16,9 @@ type CloudProvider struct {
 	credentials *google.Credentials
 }
 
-func NewGcpCloudProvider(config *config.SpikeConfig) *CloudProvider {
+func NewGcpCloudProvider(config *config.Spike) *CloudProvider {
 	gcpProvider := CloudProvider{}
-	gcpProvider.gcpConfig = config.IDP.GcpConfig
+	gcpProvider.gcpConfig = config.Spike.GcpConfig
 
 	if len(gcpProvider.gcpConfig.ProjectId) == 0 {
 		log.Fatal("[🐶] No GCP Project ID provided.")
@@ -32,12 +32,12 @@ func NewGcpCloudProvider(config *config.SpikeConfig) *CloudProvider {
 
 	creds, err := google.FindDefaultCredentials(ctx, container.CloudPlatformScope)
 	if err != nil {
-		log.Fatal(fmt.Sprintf("[🐶] Error getting credentials: %v", err))
+		log.Fatalf(fmt.Sprintf("[🐶] Error getting credentials: %v", err))
 	}
 
 	client, err := container.NewService(ctx)
 	if err != nil {
-		log.Fatal(fmt.Sprintf("[🐶] Error creating GCP client: %v", err))
+		log.Fatalf(fmt.Sprintf("[🐶] Error creating GCP client: %v", err))
 	}
 
 	gcpProvider.client = client
@@ -46,16 +46,16 @@ func NewGcpCloudProvider(config *config.SpikeConfig) *CloudProvider {
 	return &gcpProvider
 }
 
-func (a *CloudProvider) InstantiateKubernetesCluster() error {
-	vpcLink := a.getOrCreateVpc(a.gcpConfig.VPC.Name)
+func (g *CloudProvider) InstantiateKubernetesCluster() config.KubeConfig {
+	vpcLink := g.getOrCreateVpc(g.gcpConfig.VPC.Name)
 
-	publicSubnetId := a.getOrCreateSubnet(vpcLink, a.gcpConfig.VPC.Subnets.PublicSubnetName, a.gcpConfig.VPC.Subnets.PublicSubnetAz, a.gcpConfig.VPC.Subnets.PublicSubnetCidr)
+	publicSubnetId := g.getOrCreateSubnet(vpcLink, g.gcpConfig.VPC.Subnets.PublicSubnetName, g.gcpConfig.VPC.Subnets.PublicSubnetAz, g.gcpConfig.VPC.Subnets.PublicSubnetCidr)
 
-	cluster := a.retrieveCluster()
-	if cluster == "" {
-		fmt.Printf("[🐶] No %s found, creating one...\n", a.gcpConfig.GKE.Name)
-		a.createCluster(vpcLink, publicSubnetId)
+	cluster := g.retrieveCluster()
+	if nil == &cluster.Name {
+		fmt.Printf("[🐶] No %s found, creating one...\n", g.gcpConfig.GKE.Name)
+		g.createCluster(vpcLink, publicSubnetId)
 	}
 
-	return nil
+	return g.retrieveKubeConfigInfo()
 }

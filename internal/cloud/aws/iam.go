@@ -11,7 +11,7 @@ import (
 
 type PolicyDocument struct {
 	Version   string            `json:"Version"`
-	Statement []PolicyStatement `json:Statement`
+	Statement []PolicyStatement `json:"Statement"`
 }
 
 type PolicyStatement struct {
@@ -20,7 +20,7 @@ type PolicyStatement struct {
 	Action    []string          `json:"Action"`
 }
 
-func (a CloudProvider) retrieveRole() string {
+func (a *CloudProvider) retrieveClusterRole() string {
 	svc := iam.New(a.session)
 
 	output, err := svc.GetRole(&iam.GetRoleInput{
@@ -33,23 +33,21 @@ func (a CloudProvider) retrieveRole() string {
 	}
 
 	fmt.Printf("[🐶] Found role %s with Id: %s\n", *output.Role.RoleName, *output.Role.RoleId)
-	return *output.Role.Arn
 
+	return *output.Role.Arn
 }
 
-func (a CloudProvider) createRole() string {
+func (a *CloudProvider) createClusterRole() string {
 	svc := iam.New(a.session)
 
-	trustPolicy := PolicyDocument{
+	policyBytes, err := json.Marshal(PolicyDocument{
 		Version: "2012-10-17",
 		Statement: []PolicyStatement{{
 			Effect:    "Allow",
 			Principal: map[string]string{"Service": "eks.amazonaws.com"},
 			Action:    []string{"sts:AssumeRole"},
 		}},
-	}
-
-	policyBytes, err := json.Marshal(trustPolicy)
+	})
 	if err != nil {
 		log.Fatal("[🐶] Couldn't create trust policy for 'eks.amazonaws.com': ", err)
 	}
@@ -60,13 +58,21 @@ func (a CloudProvider) createRole() string {
 	})
 
 	if err != nil {
-		log.Fatal("[🐶] Error creating Role: ", err)
+		log.Fatal("[🐶] Error creating Cluster Role: ", err)
 	}
+
+	fmt.Println("[🐶] Cluster role creation requested, waiting for completion...")
+	if err := svc.WaitUntilRoleExists(&iam.GetRoleInput{
+		RoleName: aws.String("eksClusterRole"),
+	}); err != nil {
+		log.Fatal("[🐶] Error waiting for role creation: ", err)
+	}
+	fmt.Println("[🐶] Successfully created eksClusterRole")
 
 	return *roleOutput.Role.Arn
 }
 
-func (a CloudProvider) attachRolePolicy() {
+func (a *CloudProvider) attachClusterRolePolicy() {
 	svc := iam.New(a.session)
 
 	fmt.Println("[🐶] Attaching Role Policy to eksClusterRole...")
@@ -74,6 +80,93 @@ func (a CloudProvider) attachRolePolicy() {
 	_, err := svc.AttachRolePolicy(&iam.AttachRolePolicyInput{
 		PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"),
 		RoleName:  aws.String("eksClusterRole"),
+	})
+
+	if err != nil {
+		log.Fatal("[🐶] Error attaching Role Policy: ", err)
+	}
+
+	fmt.Println("[🐶] Role Policy Successfully Attached")
+}
+
+func (a *CloudProvider) retrieveNodeRole() string {
+	svc := iam.New(a.session)
+
+	output, err := svc.GetRole(&iam.GetRoleInput{
+		RoleName: aws.String("eksNodeRole"),
+	})
+
+	if err != nil {
+		fmt.Println("[🐶] Error describing Role: ", err)
+		return ""
+	}
+
+	fmt.Printf("[🐶] Found role %s with Arn: %s\n", *output.Role.RoleName, *output.Role.Arn)
+
+	return *output.Role.Arn
+}
+
+func (a *CloudProvider) createNodeRole() string {
+	svc := iam.New(a.session)
+
+	policyBytes, err := json.Marshal(PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []PolicyStatement{{
+			Effect:    "Allow",
+			Principal: map[string]string{"Service": "ec2.amazonaws.com"},
+			Action:    []string{"sts:AssumeRole"},
+		}},
+	})
+	if err != nil {
+		log.Fatal("[🐶] Couldn't create trust policy for 'ec2.amazonaws.com': ", err)
+	}
+
+	roleOutput, err := svc.CreateRole(&iam.CreateRoleInput{
+		RoleName:                 aws.String("eksNodeRole"),
+		AssumeRolePolicyDocument: aws.String(string(policyBytes)),
+	})
+
+	if err != nil {
+		log.Fatal("[🐶] Error creating Node Role: ", err)
+	}
+
+	fmt.Println("[🐶] Node role creation requested, waiting for completion...")
+	if err := svc.WaitUntilRoleExists(&iam.GetRoleInput{
+		RoleName: aws.String("eksNodeRole"),
+	}); err != nil {
+		log.Fatal("[🐶] Error waiting for role creation: ", err)
+	}
+	fmt.Println("[🐶] Successfully created eksNodeRole")
+
+	return *roleOutput.Role.Arn
+}
+
+func (a *CloudProvider) attachNodeRolePolicy() {
+	svc := iam.New(a.session)
+
+	fmt.Println("[🐶] Attaching Role Policy to eksNodeRole...")
+
+	_, err := svc.AttachRolePolicy(&iam.AttachRolePolicyInput{
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"),
+		RoleName:  aws.String("eksNodeRole"),
+	})
+
+	if err != nil {
+		log.Fatal("[🐶] Error attaching Role Policy: ", err)
+	}
+
+	_, err = svc.AttachRolePolicy(&iam.AttachRolePolicyInput{
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"),
+		RoleName:  aws.String("eksNodeRole"),
+	})
+
+	if err != nil {
+		log.Fatal("[🐶] Error attaching Role Policy: ", err)
+	}
+
+	_, err = svc.AttachRolePolicy(&iam.AttachRolePolicyInput{
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"),
+		RoleName:  aws.String("eksNodeRole"),
 	})
 
 	if err != nil {

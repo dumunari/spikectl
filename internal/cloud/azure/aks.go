@@ -2,10 +2,13 @@ package azure
 
 import (
 	"context"
+	"fmt"
+	"log"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"log"
+	"github.com/dumunari/spikectl/internal/config"
 )
 
 type AksParameters struct {
@@ -13,11 +16,11 @@ type AksParameters struct {
 	ManagedClusterName string
 }
 
-func (p *CloudProvider) createOrUpdateAKS(params *AksParameters) (*armcontainerservice.ManagedCluster, error) {
+func (az *CloudProvider) createOrUpdateAKS(params *AksParameters) (*armcontainerservice.ManagedCluster, error) {
 
-	subscriptionID := p.azureConfig.SubscriptionId
+	subscriptionID := az.azureConfig.SubscriptionId
 
-	containerServiceClientFactory, err := armcontainerservice.NewClientFactory(subscriptionID, p.credentials, nil)
+	containerServiceClientFactory, err := armcontainerservice.NewClientFactory(subscriptionID, az.credentials, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,8 +52,8 @@ func (p *CloudProvider) createOrUpdateAKS(params *AksParameters) (*armcontainers
 				},
 				DNSPrefix: to.Ptr("idp"),
 				ServicePrincipalProfile: &armcontainerservice.ManagedClusterServicePrincipalProfile{
-					ClientID: &p.azureConfig.Aks.ServiceProvider.ClientID,
-					Secret:   &p.azureConfig.Aks.ServiceProvider.ClientSecret,
+					ClientID: &az.azureConfig.Aks.ServiceProvider.ClientID,
+					Secret:   &az.azureConfig.Aks.ServiceProvider.ClientSecret,
 				},
 			},
 		},
@@ -67,4 +70,16 @@ func (p *CloudProvider) createOrUpdateAKS(params *AksParameters) (*armcontainers
 	}
 
 	return &resp.ManagedCluster, nil
+}
+
+func (az *CloudProvider) retrieveKubeConfigInfo(cluster armcontainerservice.ManagedCluster) config.KubeConfig {
+	//TODO @Gui: add needed information
+	kubeConfig := config.KubeConfig{
+		EndPoint: "",
+		Token:    "",
+		CaFile:   "",
+	}
+
+	fmt.Println("[🐶] Kubeconfig successfully prepared")
+	return kubeConfig
 }

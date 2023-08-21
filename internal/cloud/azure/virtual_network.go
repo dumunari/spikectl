@@ -11,8 +11,8 @@ import (
 	"github.com/dumunari/spikectl/internal/config"
 )
 
-func (p *CloudProvider) retrieveVirtualNetwork(rg *armresources.ResourceGroup) (*armnetwork.VirtualNetwork, error) {
-	networkClientFactory, err := armnetwork.NewClientFactory(p.azureConfig.SubscriptionId, p.credentials, nil)
+func (az *CloudProvider) retrieveVirtualNetwork(rg *armresources.ResourceGroup) (*armnetwork.VirtualNetwork, error) {
+	networkClientFactory, err := armnetwork.NewClientFactory(az.azureConfig.SubscriptionId, az.credentials, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -20,11 +20,11 @@ func (p *CloudProvider) retrieveVirtualNetwork(rg *armresources.ResourceGroup) (
 	client := networkClientFactory.NewVirtualNetworksClient()
 
 	ctx := context.Background()
-	if vnet, ok := checkExistenceVirtualNetwork(ctx, client, rg, p.azureConfig.VirtualNetworkConfig); ok {
+	if vnet, ok := checkExistenceVirtualNetwork(ctx, client, rg, az.azureConfig.VirtualNetworkConfig); ok {
 		return vnet, nil
 	}
 
-	vnet, err := createVirtualNetwork(ctx, client, rg, p.azureConfig.VirtualNetworkConfig)
+	vnet, err := createVirtualNetwork(ctx, client, rg, az.azureConfig.VirtualNetworkConfig)
 	if err != nil {
 		return nil, err
 	}
