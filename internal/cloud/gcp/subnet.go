@@ -63,6 +63,12 @@ func (g *CloudProvider) createSubnet(vpcLink, subnetName, subnetCidr, subnetRegi
 		log.Fatal("[🐶] Error creating Subnet: ", err)
 	}
 
+	wait_op, err := service.RegionOperations.Wait(g.gcpConfig.ProjectId, subnetRegion, op.Name).Context(ctx).Do()
+
+	if err != nil || wait_op.Error != nil {
+		log.Fatal("[🐶] Error waiting for operation: ", err)
+	}
+
 	fmt.Printf("[🐶] %s Successfully created: %s\n", subnetName, op.TargetLink)
 	return op.TargetLink
 }
