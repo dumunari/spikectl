@@ -8,18 +8,18 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
-func (a *CloudProvider) getOrCreateSubnet(vpcLink, subnetName, subnetRegion, subnetCidr string) string {
-	subnetId := a.retrieveSubnet(subnetName, subnetRegion)
+func (g *CloudProvider) getOrCreateSubnet(vpcLink, subnetName, subnetRegion, subnetCidr string) string {
+	subnetId := g.retrieveSubnet(subnetName, subnetRegion)
 
 	if subnetId == "" {
 		fmt.Printf("[🐶] No %s found, creating one...\n", subnetName)
-		subnetId = a.createSubnet(vpcLink, subnetName, subnetCidr, subnetRegion)
+		subnetId = g.createSubnet(vpcLink, subnetName, subnetCidr, subnetRegion)
 	}
 
 	return subnetId
 }
 
-func (a *CloudProvider) retrieveSubnet(subnetName, subnetRegion string) string {
+func (g *CloudProvider) retrieveSubnet(subnetName, subnetRegion string) string {
 	ctx := context.Background()
 
 	service, err := compute.NewService(ctx)
@@ -28,7 +28,7 @@ func (a *CloudProvider) retrieveSubnet(subnetName, subnetRegion string) string {
 	}
 
 	filter := fmt.Sprintf("name eq %s", subnetName)
-	resp, err := service.Subnetworks.List(a.gcpConfig.ProjectId, subnetRegion).Filter(filter).Context(ctx).Do()
+	resp, err := service.Subnetworks.List(g.gcpConfig.ProjectId, subnetRegion).Filter(filter).Context(ctx).Do()
 
 	if err != nil {
 		log.Fatal("[🐶] Error listing Subnets: ", err)
@@ -61,6 +61,12 @@ func (g *CloudProvider) createSubnet(vpcLink, subnetName, subnetCidr, subnetRegi
 
 	if err != nil {
 		log.Fatal("[🐶] Error creating Subnet: ", err)
+	}
+
+	wait_op, err := service.RegionOperations.Wait(g.gcpConfig.ProjectId, subnetRegion, op.Name).Context(ctx).Do()
+
+	if err != nil || wait_op.Error != nil {
+		log.Fatal("[🐶] Error waiting for operation: ", err)
 	}
 
 	fmt.Printf("[🐶] %s Successfully created: %s\n", subnetName, op.TargetLink)

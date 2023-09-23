@@ -52,7 +52,7 @@ func (g *CloudProvider) InstantiateKubernetesCluster() config.KubeConfig {
 	publicSubnetId := g.getOrCreateSubnet(vpcLink, g.gcpConfig.VPC.Subnets.PublicSubnetName, g.gcpConfig.VPC.Subnets.PublicSubnetAz, g.gcpConfig.VPC.Subnets.PublicSubnetCidr)
 
 	cluster := g.retrieveCluster()
-	if nil == &cluster.Name {
+	if "" == cluster.Name {
 		fmt.Printf("[🐶] No %s found, creating one...\n", g.gcpConfig.GKE.Name)
 		g.createCluster(vpcLink, publicSubnetId)
 	}
